@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GoldenEye 007 - Clean CDN Edition</title>
+    <style>
+        body { background: #151515; color: #fff; text-align: center; font-family: sans-serif; margin: 0; padding: 20px; }
+        h1 { color: #f1c40f; margin-bottom: 5px; }
+        #canvas { width: 640px; height: 480px; background: #000; border: 4px solid #333; margin: 20px auto; display: block; }
+        #status { font-style: italic; color: #bbb; font-size: 16px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>GOLDENEYE 007</h1>
+    <div id="status">Loading...</div>
+    <canvas id="canvas" width="640" height="480"></canvas>
+
+    <!-- ========================================================================= -->
+    <!-- PUT LOADER JSDELIVR HERE                                                  -->
+    <!-- Replace the URL below with your personal jsDelivr path once uploaded!    -->
+    <!-- ========================================================================= -->
+    <script src="https://jsdelivr.net"></script>
+
+    <script>
+        const statusElement = document.getElementById('status');
+
+        function convertBase64ToBinary(base64) {
+            const rawText = atob(base64.trim());
+            const bufferArray = new Uint8Array(rawText.length);
+            for (let i = 0; i < rawText.length; i++) {
+                bufferArray[i] = rawText.charCodeAt(i);
+            }
+            return bufferArray;
+        }
+
+        async function initializeSystem() {
+            try {
+                statusElement.textContent = "Extracting GoldenEye data from Base64...";
+                if (typeof window.GOLDENEYE_ROM_BASE64 === 'undefined') {
+                    throw new Error("Game data variable not found. Check your jsDelivr link configuration!");
+                }
+                const cartridgeBinary = convertBase64ToBinary(window.GOLDENEYE_ROM_BASE64);
+
+                statusElement.textContent = "Configuring emulated N64 motherboard...";
+                
+                window.Module = {
+                    canvas: document.getElementById('canvas'),
+                    arguments: ["/goldeneye.v64"],
+                    locateFile: function(path) {
+                        if (path.endsWith('.wasm')) {
+                            return "https://jsdelivr.net";
+                        }
+                        return path;
+                    },
+                    preRun: [function() {
+                        Module.FS.createDataFile("/", "goldeneye.v64", cartridgeBinary, true, false);
+                    }],
+                    postRun: [function() {
+                        statusElement.textContent = "System active! Click canvas and use Keyboard controls.";
+                    }]
+                };
+
+                statusElement.textContent = "Launching CDN core processors...";
+                
+                const scriptNode = document.createElement('script');
+                scriptNode.src = "https://jsdelivr.net";
+                document.body.appendChild(scriptNode);
+
+            } catch (err) {
+                statusElement.textContent = "Initialization failed: " + err.message;
+                console.error(err);
+            }
+        }
+        window.addEventListener('DOMContentLoaded', initializeSystem);
+    </script>
+</body>
+</html>
